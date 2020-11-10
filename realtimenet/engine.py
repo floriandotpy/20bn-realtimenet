@@ -84,7 +84,10 @@ class InferenceEngine(Thread):
         return predictions
 
 
-def run_inference_engine(inference_engine, framegrabber, post_processors, results_display, path_out):
+def run_inference_engine(inference_engine, framegrabber, post_processors, results_display, path_out,
+                         inference_listeners=None):
+
+    inference_listeners = inference_listeners or []
 
     # Initialization of a few variables
     clip = np.random.randn(1, inference_engine.step_size, inference_engine.expected_frame_size[0],
@@ -97,6 +100,9 @@ def run_inference_engine(inference_engine, framegrabber, post_processors, result
     # Start threads
     inference_engine.start()
     framegrabber.start()
+
+    for listener in inference_listeners:
+        listener.on_start()
 
     # Begin calorie estimation
     while True:
@@ -133,6 +139,10 @@ def run_inference_engine(inference_engine, framegrabber, post_processors, result
             # Live display
             img_with_ui = results_display.show(img, display_data)
 
+            # Any custom inference listeners
+            for listener in inference_listeners:
+                listener.on_prediction(prediction, post_processed_data, img, numpy_img)
+
             # Recording
             if path_out:
                 if video_recorder is None or video_recorder_raw is None:
@@ -151,6 +161,9 @@ def run_inference_engine(inference_engine, framegrabber, post_processors, result
         # Press escape to exit
         if cv2.waitKey(1) == 27:
             break
+
+    for listener in inference_listeners:
+        listener.on_shutdown()
 
     # Clean up
     cv2.destroyAllWindows()
@@ -172,3 +185,15 @@ def load_weights(checkpoint_path):
         raise Exception('ERROR - Weights file missing: {}. To download, please go to '
                         'https://20bn.com/licensing/sdk/evaluation and follow the '
                         'instructions.'.format(checkpoint_path))
+
+
+class InferenceListener:
+
+    def on_start(self):
+        pass
+
+    def on_prediction(self, prediction, post_processed_data, img, numpy_img):
+        pass
+
+    def on_shutdown(self):
+        pass

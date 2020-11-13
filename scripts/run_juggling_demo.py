@@ -62,12 +62,9 @@ class JugglingDisplayOp:
 
         count = self._get_ball_count(top_prediction, top_proba)
         self.counts.append(count)
-        count_avg = math.ceil(sum(self.counts) / len(self.counts))
-        # print()
-
+        num_objects = self.most_frequent(self.counts)
         top_n = 3
-
-        cv2.putText(img, f"Juggling {count_avg} objects", (100, 100), FONT, 3, (255, 255, 255),
+        cv2.putText(img, f"Juggling {num_objects} objects", (100, 100), FONT, 3, (255, 255, 255),
                     2, cv2.LINE_AA)
 
         juggling_quality, msg = self._get_juggling_quality(sorted_predictions[:top_n])
@@ -82,6 +79,9 @@ class JugglingDisplayOp:
         self.draw_count_confidence_bars(img, sorted_predictions)
 
         return img
+
+    def most_frequent(self, lst):
+        return max(set(lst), key=lst.count)
 
     def draw_count_confidence_bars(self, img, sorted_predictions, threshold=.7):
         count_probas = self._get_ball_count_probas(sorted_predictions)

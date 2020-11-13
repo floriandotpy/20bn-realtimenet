@@ -1,4 +1,5 @@
 import cv2
+from pynput.keyboard import Key, Controller
 
 
 FONT = cv2.FONT_HERSHEY_PLAIN
@@ -87,6 +88,12 @@ class DisplayTopKClassificationOutputs:
         self.top_k = top_k
         self.threshold = threshold
         self.y_offset = y_offset
+        self.last_activity = None
+        self.trigger_activities = (
+            "Jumping Jacks",
+            "Thumb up"
+        )
+        self.keyboard = Controller()
 
     def display(self, img, display_data):
         sorted_predictions = display_data['sorted_predictions']
@@ -94,7 +101,20 @@ class DisplayTopKClassificationOutputs:
             activity, proba = sorted_predictions[index]
             y_pos = 20 * (index + 1) + self.y_offset
             if proba >= self.threshold:
+
+                # check if triggered
+                if activity in self.trigger_activities:
+                    self.trigger_keyboard()
+
                 put_text(img, 'Activity: {}'.format(activity[0:50]), (10, y_pos))
                 put_text(img, 'Proba: {:0.2f}'.format(proba), (10 + self.lateral_offset,
                                                                y_pos))
+                self.last_activity = activity
         return img
+
+    def trigger_keyboard(self):
+        print("=============================== ")
+        print("===== TRIGGER SPACE KEY ======= ")
+        print("=============================== ")
+        self.keyboard.press(Key.space)
+        self.keyboard.release(Key.space)
